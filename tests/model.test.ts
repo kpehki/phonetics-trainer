@@ -36,10 +36,14 @@ test('every nonempty selection includes only selected modes and all sentences', 
 
 test('curated stories reconstruct punctuation and have vowel-based syllables', () => {
   for (const story of stories) {
-    assert.ok(story.sentences.length >= 3 && story.sentences.length <= 5);
+    assert.equal(story.sentences.length, 4, story.id);
     for (const sentence of story.sentences) {
       assert.match(sentenceText(sentence), /[.!?]$/);
+      assert.deepEqual(sentenceText(sentence).split(' '), sentence.map(parts => parts.join('')));
+      assert.match(sentenceText(sentence), /^[А-ЯЁ][а-яёА-ЯЁ ,]*[.!?]$/u, story.id);
       for (const word of sentence) {
+        for (const syllable of word) assert.match(syllable, /^[а-яёА-ЯЁ]+[,.!?]?$/u, story.id);
+        assert.equal(word.length, Math.max(1, (word.join('').match(/[аеёиоуыэюя]/gi) ?? []).length), `${story.id}: ${word.join('-')}`);
         if (word.length > 1) for (const syllable of word) assert.equal((syllable.match(/[аеёиоуыэюя]/gi) ?? []).length, 1, syllable);
       }
     }
@@ -49,7 +53,7 @@ test('curated stories reconstruct punctuation and have vowel-based syllables', (
 test('difficulty filter groups every story and selects only the requested level', () => {
   for (const level of difficulties) {
     const filtered = filterStories(level);
-    assert.ok(filtered.length >= 3, `${level} needs at least three stories`);
+    assert.equal(filtered.length, 30, `${level} needs exactly thirty stories`);
     assert.deepEqual(filtered, stories.filter(story => story.difficulty === level));
     assert.ok(filtered.every(story => story.difficulty === level));
   }
@@ -58,9 +62,11 @@ test('difficulty filter groups every story and selects only the requested level'
 });
 
 test('expanded library has unique stories and preserves an easy default', () => {
-  assert.ok(stories.length >= 9);
+  assert.equal(stories.length, 90);
   assert.equal(new Set(stories.map(story => story.id)).size, stories.length);
   assert.equal(new Set(stories.map(story => story.title)).size, stories.length);
+  assert.equal(new Set(stories.map(story => story.illustration)).size, stories.length);
+  assert.ok(stories.every(story => story.illustration.trim().length > 0));
   assert.equal(stories[0].difficulty, 'easy');
   assert.equal(filterStories('easy')[0], stories[0]);
 });
